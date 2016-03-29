@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+<!--    <parent>
+        <groupId>fr.inria.wimmics</groupId>
+        <artifactId>Neo4jTinkerpop</artifactId>
+        <version>3.1</version>
+    </parent>-->
+    <artifactId>Neo4jClient</artifactId>
+    <packaging>jar</packaging>
+    <groupId>fr.inria.wimmics</groupId>
+    <version>3.1</version>
+    <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j</artifactId>
+      <version>2.3.3</version>
+      <!-- In this context, keep this artifact as type pom -->
+      <type>pom</type>
+   <!--   <exclusions>
+        <exclusion>
+          <artifactId>neo4j-udc</artifactId>
+          <groupId>org.neo4j</groupId>
+        </exclusion>
+      </exclusions> -->
+    </dependency>
+ <!--   <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-shell</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graphviz</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-slf4j</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+ -->
+  </dependencies>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+</project>
