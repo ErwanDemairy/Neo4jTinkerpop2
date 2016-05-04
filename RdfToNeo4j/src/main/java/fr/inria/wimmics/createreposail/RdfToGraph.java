@@ -3,19 +3,25 @@
  */
 package fr.inria.wimmics.createreposail;
 
+import fr.inria.wimmics.createreposail.driver.GdbDriver;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.RelationshipType;
+
 import org.openrdf.model.BNode;
 import org.openrdf.model.IRI;
 import org.openrdf.model.Literal;
@@ -29,8 +35,7 @@ import org.openrdf.rio.RDFParser;
 import org.openrdf.rio.Rio;
 import org.openrdf.rio.helpers.BasicParserSettings;
 import org.openrdf.rio.helpers.StatementCollector;
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
+
 import org.openrdf.rio.helpers.NTriplesParserSettings;
 
 /**
@@ -39,7 +44,7 @@ import org.openrdf.rio.helpers.NTriplesParserSettings;
  *
  * @author edemairy
  */
-public class RdfToNeo4jBatch {
+public class RdfToGraph {
 
 	public static final String LITERAL = "literal";
 	public static final String IRI = "IRI";
@@ -52,24 +57,63 @@ public class RdfToNeo4jBatch {
 
 	private static Logger LOGGER = Logger.getLogger(RdfToNeo4j.class.getName());
 	protected Model model;
-	protected BatchInserter graphDb;
+	protected GdbDriver driver;
+	private static final String[] AUTHORIZED_DRIVERS_ARRAY = {"neo4j", "orientdb", "tneo4j", "torientdb"};
+	private static final HashSet<String> AUTHORIZED_DRIVERS = new HashSet<>(Arrays.asList(AUTHORIZED_DRIVERS_ARRAY));
+	private static final Map<String, String> DRIVER_TO_CLASS;
+
+	static {
+		DRIVER_TO_CLASS = new HashMap<>();
+		DRIVER_TO_CLASS.put("neo4j", "fr.inria.wimmics.createreposail.driver.Neo4jDriver");
+		DRIVER_TO_CLASS.put("orientdb", "fr.inria.wimmics.createreposail.driver.OrientDbDriver");
+		DRIVER_TO_CLASS.put("tneo4j", "fr.inria.wimmics.createreposail.driver.TinkerpopNeo4jDriver");
+		DRIVER_TO_CLASS.put("torientdb", "fr.inria.wimmics.createreposail.driver.TinkerpopOrientDbDriver");
+	}
+
+	RdfToGraph(GdbDriver driver) {
+		this.driver = driver;
+	}
 
 	public static void main(String[] args) throws FileNotFoundException {
-		if (args.length != 2) {
-			System.err.println("Usage: rdfToNeo4j fileName.rdf neo4jdb_path");
+		if (args.length < 2) {
+			System.err.println("Usage: rdfToGraph fileName db_path [backend]");
+			System.err.println("if the parser cannot guess the format of the input file, NQUADS is used.");
+			System.err.println("backend = neo4j | orientdb | tneo4j | torientdb");
+			System.err.println("  neo4j     = neo4j directly");
+			System.err.println("  orientdb  = orientdb directly");
+			System.err.println("  tneo4j    = tinkerpop with neo4j");
+			System.err.println("  torientdb = tinkerpop with orientdb");
 			System.exit(1);
+		}
+		String driverName = "neo4j";
+		if (args.length >= 3) {
+			String driverParam = args[2];
+			if (AUTHORIZED_DRIVERS.contains(driverParam)) {
+				driverName = driverParam;
+			}
+		}
+
+		String classDriver = DRIVER_TO_CLASS.get(driverName);
+		GdbDriver driver = null;
+		try {
+			Constructor driverConstructor = Class.forName(classDriver).getConstructor();
+			driver = (GdbDriver) driverConstructor.newInstance();
+		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+			Logger.getLogger(RdfToGraph.class.getName()).log(Level.SEVERE, null, ex);
+			System.exit(2);
 		}
 		String rdfFileName = args[0];
 		FileInputStream inputStream = new FileInputStream(new File(rdfFileName));
-		String neo4jDbPath = args[1];
+		String dbPath = args[1];
 
-		RdfToNeo4jBatch converter = new RdfToNeo4jBatch();
+		RdfToGraph converter = new RdfToGraph(driver);
+
 		Optional<RDFFormat> format = Rio.getParserFormatForFileName(rdfFileName);
 		if (format.isPresent()) {
-			converter.convert(inputStream, format.get(), neo4jDbPath);
+			converter.convert(inputStream, format.get(), dbPath);
 		} else {
-			System.err.println("Format of the input file unkown.");
-			converter.convert(inputStream, RDFFormat.NQUADS, neo4jDbPath);
+			LOGGER.warning("Format of the input file unkown.");
+			converter.convert(inputStream, RDFFormat.NQUADS, dbPath);
 		}
 	}
 
@@ -82,33 +126,18 @@ public class RdfToNeo4jBatch {
 	public void convert(InputStream rdfStream, RDFFormat format, String dbPath) {
 		try {
 			LOGGER.info("** begin of convert **");
-			LOGGER.info("opening the db at "+dbPath);
-			openNeo4jDb(dbPath);
+			LOGGER.info("opening the db at " + dbPath);
+			driver.openDb(dbPath);
 			LOGGER.info("Loading file");
 			readFile(rdfStream, format);
 			LOGGER.info("Writing graph in db");
 			writeModelToNeo4j();
 			LOGGER.info("closing DB");
-			closeDb();
+			driver.closeDb();
 			LOGGER.info("** end of convert **");
 		} catch (IOException ex) {
 			Logger.getLogger(RdfToNeo4j.class.getName()).log(Level.SEVERE, null, ex);
 		}
-	}
-
-	public void openNeo4jDb(String dbPath) {
-		try {
-			File dbDir = new File(dbPath);
-			graphDb = BatchInserters.inserter(dbDir);
-		} catch (Exception e) {
-			LOGGER.severe(e.toString());
-			e.printStackTrace();
-		}
-
-	}
-
-	public void closeDb() {
-		graphDb.shutdown();
 	}
 
 	/**
@@ -128,34 +157,8 @@ public class RdfToNeo4jBatch {
 		rdfParser.parse(in, "");
 	}
 
-	protected boolean nodeEquals(Node endNode, Value object) {
-		boolean result = true;
-		result &= endNode.getProperty(KIND).equals(getKind(object));
-		if (result) {
-			switch (getKind(object)) {
-				case BNODE:
-				case IRI:
-					result &= endNode.getProperty(VALUE).equals(object.stringValue());
-					break;
-				case LITERAL:
-					Literal l = (Literal) object;
-					result &= endNode.getProperty(VALUE).equals(l.getLabel());
-					result &= endNode.getProperty(TYPE).equals(l.getDatatype().stringValue());
-					if (l.getLanguage().isPresent()) {
-						result &= endNode.hasProperty(LANG) && endNode.getProperty(LANG).equals(l.getLanguage().get());
-					} else {
-						result &= !endNode.hasProperty(LANG);
-					}
-			}
-		}
-		return result;
-	}
-
-	private static enum RelTypes implements RelationshipType {
-		CONTEXT
-	}
-
 	final static private int THRESHOLD = 9414890; //Integer.MAX_VALUE;
+
 	public void writeModelToNeo4j() {
 		int triples = 0;
 		for (Statement statement : model) {
@@ -166,12 +169,12 @@ public class RdfToNeo4jBatch {
 
 			String contextString = (context == null) ? "" : context.stringValue();
 
-			long sourceNode = createNode(source);
-			long objectNode = createNode(object);
+			Object sourceNode = driver.createNode(source);
+			Object objectNode = driver.createNode(object);
 
 			Map<String, Object> properties = new HashMap();
 			properties.put(CONTEXT, contextString);
-			long relation = graphDb.createRelationship(sourceNode, objectNode, DynamicRelationshipType.withName(predicat.stringValue()), properties);
+			Object relation = driver.createRelationship(sourceNode, objectNode, predicat.stringValue(), properties);
 			triples++;
 			if (triples > THRESHOLD) {
 				break;
@@ -179,44 +182,8 @@ public class RdfToNeo4jBatch {
 		}
 		System.out.println(triples + " processed");
 	}
-	Map<String, Long> alreadySeen = new HashMap<>();
 
-	/**
-	 * Returns a new node if v does not exist yet.
-	 *
-	 * @param v
-	 * @param context
-	 * @return
-	 */
-	private long createNode(Value v) {
-		long result = -1;
-		if (alreadySeen.containsKey(v.stringValue())) {
-			return alreadySeen.get(v.stringValue());
-		}
-		Map<String, Object> properties = new HashMap();
-		switch (getKind(v)) {
-			case IRI:
-			case BNODE:
-				properties.put(VALUE, v.stringValue());
-				properties.put(KIND, getKind(v));
-				result = graphDb.createNode(properties);
-				break;
-			case LITERAL:
-				Literal l = (Literal) v;
-				properties.put(VALUE, l.getLabel());
-				properties.put(TYPE, l.getDatatype().toString());
-				properties.put(KIND, getKind(v));
-				if (l.getLanguage().isPresent()) {
-					properties.put(LANG, l.getLanguage().get());
-				}
-				result = graphDb.createNode(properties);
-				break;
-		}
-		alreadySeen.put(v.stringValue(), result);
-		return result;
-	}
-
-	private static String getKind(Value resource) {
+	public static String getKind(Value resource) {
 		if (isLiteral(resource)) {
 			return LITERAL;
 		} else if (isIRI(resource)) {

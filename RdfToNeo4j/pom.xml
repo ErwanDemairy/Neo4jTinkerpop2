@@ -45,13 +45,13 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-kernel</artifactId>
-			<version>2.3.2</version>
+			<version>2.3.3</version>
 			<type>jar</type>
 		</dependency>
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-lucene-index</artifactId>
-			<version>2.3.2</version>
+			<version>2.3.3</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -72,6 +72,12 @@
 			<scope>test</scope>
 			<type>jar</type>
 		</dependency>
+	 <dependency>
+	  <groupId>com.michaelpollmeier</groupId>
+	  <artifactId>orientdb-gremlin</artifactId>
+	  <version>3.1.1-incubating.1</version>
+	  <type>jar</type>
+	 </dependency>
 	</dependencies>
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
