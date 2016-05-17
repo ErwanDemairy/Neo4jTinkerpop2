@@ -28,10 +28,12 @@ import org.openrdf.model.Value;
  * @author edemairy
  */
 public class OrientDbDriver implements GdbDriver {
+
 	OrientGraphFactory graph;
+
 	@Override
 	public void openDb(String dbPath) {
-		graph = new OrientGraphFactory(dbPath);	
+		graph = new OrientGraphFactory(dbPath);
 	}
 
 	@Override
@@ -40,12 +42,38 @@ public class OrientDbDriver implements GdbDriver {
 	}
 
 	Map<String, Object> alreadySeen = new HashMap<>();
+
+	String nodeId(Value v) {
+		StringBuilder result = new StringBuilder();
+		String kind = RdfToGraph.getKind(v);
+		switch (kind) {
+			case IRI:
+			case BNODE:
+				result.append("label=" + v.stringValue() + ";");
+				result.append("value=" + v.stringValue() + ";");
+				result.append("kind=" + kind);
+				break;
+			case LITERAL:
+				Literal l = (Literal) v;
+				result.append("label=" + l.getLabel() + ";");
+				result.append("value=" + l.getLabel() + ";");
+				result.append("type=" + l.getDatatype().toString() + ";");
+				result.append("kind=" + kind);
+				if (l.getLanguage().isPresent()) {
+					result.append("lang=" + l.getLanguage().get() + ";");
+				}
+				break;
+		}
+		return result.toString();
+	}
+
 	@Override
 	public Object createNode(Value v) {
 		OrientGraph g = graph.getTx();
 		Object result = null;
-		if (alreadySeen.containsKey(v.stringValue())) {
-			return alreadySeen.get(v.stringValue());
+		String nodeId = nodeId(v);
+		if (alreadySeen.containsKey(nodeId)) {
+			return alreadySeen.get(nodeId);
 		}
 		switch (RdfToGraph.getKind(v)) {
 			case IRI:
@@ -70,7 +98,7 @@ public class OrientDbDriver implements GdbDriver {
 			}
 		}
 		g.commit();
-		alreadySeen.put(v.stringValue(), result);
+		alreadySeen.put(nodeId, result);
 		return result;
 	}
 
@@ -90,5 +118,5 @@ public class OrientDbDriver implements GdbDriver {
 		g.commit();
 		return result;
 	}
-	
+
 }
