@@ -44,6 +44,29 @@ public class RdfToNeo4jTest {
 		expected.shutdown();
 	}
 
+        /**
+	 * Test of convert method, of class RdfToNeo4jBatch.
+	 */
+	@Test
+	public void testConvertBatch() throws FileNotFoundException {
+		String inputFile = ROOT_RESOURCES + "testConvert/input1.rdf";
+		String outputDb = ROOT_RESOURCES + "testConvertBatchResult.neo4jdb";
+		String expectedDb = ROOT_RESOURCES + "testConvertExpected.neo4jdb";
+
+		RdfToNeo4jBatch converter = new RdfToNeo4jBatch();
+		FileInputStream inputStream = new FileInputStream(new File(inputFile));
+		converter.convert(inputStream, RDFFormat.NQUADS, outputDb);
+		GraphDatabaseService result = new GraphDatabaseFactory().newEmbeddedDatabase(new File(outputDb));
+		GraphDatabaseService expected = new GraphDatabaseFactory().newEmbeddedDatabase(new File(expectedDb));
+		assert (areEquals(result, expected));
+		result.shutdown();
+		expected.shutdown();
+	}
+
+
+	
+	
+
 	private boolean areEquals(GraphDatabaseService result, GraphDatabaseService expected) {
 		result.beginTx();
 		expected.beginTx();

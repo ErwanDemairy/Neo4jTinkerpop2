@@ -80,6 +80,30 @@ public class Neo4jDriver implements GdbDriver {
 	}
 	Map<String, Long> alreadySeen = new HashMap<>();
 
+	String nodeId(Value v) {
+		StringBuilder result = new StringBuilder();
+		String kind = RdfToGraph.getKind(v);
+		switch (kind) {
+			case IRI:
+			case BNODE:
+				result.append("label=" + v.stringValue() + ";");
+				result.append("value=" + v.stringValue() + ";");
+				result.append("kind=" + kind);
+				break;
+			case LITERAL:
+				Literal l = (Literal) v;
+				result.append("label=" + l.getLabel() + ";");
+				result.append("value=" + l.getLabel() + ";");
+				result.append("type=" + l.getDatatype().toString() + ";");
+				result.append("kind=" + kind);
+				if (l.getLanguage().isPresent()) {
+					result.append("lang=" + l.getLanguage().get() + ";");
+				}
+				break;
+		}
+		return result.toString();
+	}
+
 	/**
 	 * Returns a new node if v does not exist yet.
 	 *
@@ -88,10 +112,12 @@ public class Neo4jDriver implements GdbDriver {
 	 * @return
 	 */
 	@Override
-	public Object createNode(Value v) {
+	public Object createNode(Value v
+	) {
 		Long result = null;
-		if (alreadySeen.containsKey(v.stringValue())) {
-			return alreadySeen.get(v.stringValue());
+		String nodeId = nodeId(v);
+		if (alreadySeen.containsKey(nodeId)) {
+			return alreadySeen.get(nodeId);
 		}
 		Label label;
 		Map<String, Object> properties = new HashMap();
@@ -115,12 +141,13 @@ public class Neo4jDriver implements GdbDriver {
 				result = inserter.createNode(properties, label);
 				break;
 		}
-		alreadySeen.put(v.stringValue(), result);
+		alreadySeen.put(nodeId, result);
 		return result;
 	}
 
 	@Override
-	public Object createRelationship(Object source, Object object, String predicate, Map<String, Object> properties) {
+	public Object createRelationship(Object source, Object object, String predicate, Map<String, Object> properties
+	) {
 		return inserter.createRelationship((Long) source, (Long) object, DynamicRelationshipType.withName(predicate), properties);
 	}
 }
