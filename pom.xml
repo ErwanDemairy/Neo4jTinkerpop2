@@ -8,6 +8,7 @@
     <modules>
         <module>../BasicTinkerpopRdf</module>
         <module>Neo4jClient</module>
+        <module>CreateRepoSail</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
