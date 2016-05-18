@@ -1,0 +1,5 @@
+2016-05-17 12:00:45.016+0000 INFO  [o.n.u.b.BatchInserterImpl] Thread[main,5,main] Starting BatchInserter(EmbeddedBatchInserter[src/test/resources/testConvertBatchResult.neo4jdb])
+2016-05-17 12:00:45.306+0000 INFO  [o.n.k.a.i.i.LuceneLabelScanStore] No lucene scan store index found, this might just be first use. Preparing to rebuild.
+2016-05-17 12:00:45.332+0000 INFO  [o.n.k.a.i.i.LuceneLabelScanStore] Rebuilding lucene scan store, this may take a while
+2016-05-17 12:00:45.336+0000 INFO  [o.n.k.a.i.i.LuceneLabelScanStore] Lucene scan store rebuilt (roughly -1 nodes)
+2016-05-17 12:01:29.200+0000 INFO  [o.n.u.b.BatchInserterImpl] Thread[main,5,main] Starting BatchInserter(EmbeddedBatchInserter[src/test/resources/testConvertBatchResult.neo4jdb])
