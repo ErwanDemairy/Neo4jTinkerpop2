@@ -13,9 +13,14 @@ import static fr.inria.wimmics.createreposail.RdfToGraph.LANG;
 import static fr.inria.wimmics.createreposail.RdfToGraph.LITERAL;
 import static fr.inria.wimmics.createreposail.RdfToGraph.TYPE;
 import static fr.inria.wimmics.createreposail.RdfToGraph.VALUE;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -33,6 +38,16 @@ public class OrientDbDriver extends GdbDriver {
 
 	@Override
 	public void openDb(String dbPath) {
+		try {
+			if (getWipeOnOpen()) {
+				String path = dbPath.replaceFirst("plocal:", "");
+				if (Files.exists(Paths.get(path))) {
+					delete(path);
+				}
+			}
+		} catch (IOException ex) {
+			Logger.getLogger(OrientDbDriver.class.getName()).log(Level.SEVERE, null, ex);
+		}
 		graph = new OrientGraphFactory(dbPath);
 	}
 

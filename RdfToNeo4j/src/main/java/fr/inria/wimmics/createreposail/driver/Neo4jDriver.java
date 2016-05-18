@@ -47,11 +47,7 @@ public class Neo4jDriver extends GdbDriver {
 		try {
 			File dbDir = new File(dbPath);
 			if (getWipeOnOpen()) {
-				Files.walk(Paths.get(dbPath), FileVisitOption.FOLLOW_LINKS)
-					.sorted(Comparator.reverseOrder())
-					.map(Path::toFile)
-					.peek(path -> LOGGER.log(Level.INFO, "removing: {0}", path))
-					.forEach(File::delete);
+				delete(dbPath);
 			}
 			inserter = BatchInserters.inserter(dbDir);
 		} catch (Exception e) {

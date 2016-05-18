@@ -5,24 +5,48 @@
  */
 package fr.inria.wimmics.createreposail.driver;
 
+import static com.sun.xml.internal.ws.spi.db.BindingContextFactory.LOGGER;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.logging.Level;
 import org.openrdf.model.Value;
 
 /**
  * Interface for a Graph Database driver.
+ *
  * @author edemairy
  */
 public abstract class GdbDriver {
+
 	private boolean wipeOnOpen;
 
 	public abstract void openDb(String dbPath);
+
 	public void setWipeOnOpen(boolean newValue) {
 		wipeOnOpen = newValue;
 	}
+
 	public boolean getWipeOnOpen() {
 		return wipeOnOpen;
 	}
+
+	public static void delete(String path) throws IOException {
+		Files.walk(Paths.get(path), FileVisitOption.FOLLOW_LINKS)
+			.sorted(Comparator.reverseOrder())
+			.map(Path::toFile)
+			.peek(p -> LOGGER.log(Level.INFO, "removing: {0}", p))
+			.forEach(File::delete);
+	}
+
 	public abstract void closeDb();
+
 	public abstract Object createNode(Value v);
+
 	public abstract Object createRelationship(Object sourceId, Object objectId, String predicate, Map<String, Object> properties);
 }

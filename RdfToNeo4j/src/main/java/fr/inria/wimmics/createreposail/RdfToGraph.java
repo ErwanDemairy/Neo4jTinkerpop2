@@ -96,8 +96,6 @@ public class RdfToGraph {
 			System.err.println("backend = neo4j | orientdb | tneo4j | torientdb");
 			System.err.println("  neo4j     = neo4j directly");
 			System.err.println("  orientdb  = orientdb directly");
-			System.err.println("  tneo4j    = tinkerpop with neo4j");
-			System.err.println("  torientdb = tinkerpop with orientdb");
 			System.exit(1);
 		}
 		String driverName = "neo4j";
