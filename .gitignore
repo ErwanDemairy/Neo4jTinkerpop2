@@ -1,0 +1,12 @@
+/TinkerpopNeo4j/target/
+/Gremlin/target/
+/CreateRepoSail/target/
+/CreateRepoSail/nbproject/
+/RdfToNeo4j/target/
+/RdfToNeo4j/nbproject/
+/RdfToGraph/nbproject/
+/RdfToGraph/target/
+/RdfToNeo4j/src/test/resources/testConvertOrientdbResult.orientdb/
+/RdfToNeo4j/src/test/resources/testConvertNeo4jResult.neo4jdb/
+/RdfToNeo4j/src/test/resources/testConvertBatchResult.neo4jdb/
+/RdfToNeo4j/src/test/resources/testConvertResult.neo4jdb/
