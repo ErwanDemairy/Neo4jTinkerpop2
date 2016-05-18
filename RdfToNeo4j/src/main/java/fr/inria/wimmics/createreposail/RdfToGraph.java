@@ -10,7 +10,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -52,7 +51,7 @@ public class RdfToGraph {
 	public static final String TYPE = "type";
 	public static final String VALUE = "value";
 
-	private static Logger LOGGER = Logger.getLogger(RdfToNeo4j.class.getName());
+	private static Logger LOGGER = Logger.getLogger(RdfToGraph.class.getName());
 	protected Model model;
 	protected GdbDriver driver;
 	private static final String[] AUTHORIZED_DRIVERS_ARRAY = {"neo4j", "orientdb", "tneo4j", "torientdb"};
@@ -63,12 +62,31 @@ public class RdfToGraph {
 		DRIVER_TO_CLASS = new HashMap<>();
 		DRIVER_TO_CLASS.put("neo4j", "fr.inria.wimmics.createreposail.driver.Neo4jDriver");
 		DRIVER_TO_CLASS.put("orientdb", "fr.inria.wimmics.createreposail.driver.OrientDbDriver");
-		DRIVER_TO_CLASS.put("tneo4j", "fr.inria.wimmics.createreposail.driver.TinkerpopNeo4jDriver");
-		DRIVER_TO_CLASS.put("torientdb", "fr.inria.wimmics.createreposail.driver.TinkerpopOrientDbDriver");
 	}
 
-	RdfToGraph(GdbDriver driver) {
-		this.driver = driver;
+	public RdfToGraph() {
+	}
+
+	/**
+	 *
+	 * @param driverName Short name given in DRIVER_TO_CLASS for the driver
+	 * to use.
+	 */
+	public void setDriver(String driverName) {
+		try {
+			String driverClassName = DRIVER_TO_CLASS.get(driverName);
+			this.driver = buildDriver(driverClassName);
+		} catch (Exception ex) {
+			LOGGER.log(Level.SEVERE, "Impossible to set driver to {0}, caused by ", driverName);
+			ex.printStackTrace();
+		}
+	}
+
+	private static GdbDriver buildDriver(String driverName) throws Exception {
+		GdbDriver result;
+		Constructor driverConstructor = Class.forName(driverName).getConstructor();
+		result = (GdbDriver) driverConstructor.newInstance();
+		return result;
 	}
 
 	public static void main(String[] args) throws FileNotFoundException {
@@ -90,20 +108,12 @@ public class RdfToGraph {
 			}
 		}
 
-		String classDriver = DRIVER_TO_CLASS.get(driverName);
-		GdbDriver driver = null;
-		try {
-			Constructor driverConstructor = Class.forName(classDriver).getConstructor();
-			driver = (GdbDriver) driverConstructor.newInstance();
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-			Logger.getLogger(RdfToGraph.class.getName()).log(Level.SEVERE, null, ex);
-			System.exit(2);
-		}
+		RdfToGraph converter = new RdfToGraph();
+		converter.setDriver(driverName);
+
 		String rdfFileName = args[0];
 		FileInputStream inputStream = new FileInputStream(new File(rdfFileName));
 		String dbPath = args[1];
-
-		RdfToGraph converter = new RdfToGraph(driver);
 
 		Optional<RDFFormat> format = Rio.getParserFormatForFileName(rdfFileName);
 		if (format.isPresent()) {
@@ -118,13 +128,14 @@ public class RdfToGraph {
 	/**
 	 * Read a RDF stream and serialize it inside a Neo4j graph.
 	 *
-	 * @param rdfStream
-	 * @param dbPath
+	 * @param rdfStream Input stream containing rdf data
+	 * @param format Format used for the rdf representation in the input stream
+	 * @param dbPath Where to store the rdf data.
 	 */
 	public void convert(InputStream rdfStream, RDFFormat format, String dbPath) {
 		try {
 			LOGGER.info("** begin of convert **");
-			LOGGER.info("opening the db at " + dbPath);
+			LOGGER.log(Level.INFO, "opening the db at {0}", dbPath);
 			driver.openDb(dbPath);
 			LOGGER.info("Loading file");
 			readFile(rdfStream, format);
@@ -134,7 +145,7 @@ public class RdfToGraph {
 			driver.closeDb();
 			LOGGER.info("** end of convert **");
 		} catch (IOException ex) {
-			Logger.getLogger(RdfToNeo4j.class.getName()).log(Level.SEVERE, null, ex);
+			LOGGER.log(Level.SEVERE, "Exception during conversion: {0}", ex.toString());
 		}
 	}
 
@@ -142,6 +153,7 @@ public class RdfToGraph {
 	 * Fill model with the content of an input stream.
 	 *
 	 * @param in Stream on an RDF file.
+	 * @param format Format used to represent the RDF in the file.
 	 * @throws IOException
 	 */
 	public void readFile(InputStream in, RDFFormat format) throws IOException {
@@ -211,6 +223,10 @@ public class RdfToGraph {
 
 	private static boolean isBNode(Value resource) {
 		return isType(BNode.class, resource);
+	}
+
+	void setWipeOnOpen(boolean b) {
+		driver.setWipeOnOpen(b);
 	}
 
 }

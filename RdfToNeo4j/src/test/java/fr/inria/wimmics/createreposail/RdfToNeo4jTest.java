@@ -26,46 +26,27 @@ public class RdfToNeo4jTest {
 	private static final String ROOT_RESOURCES = "src/test/resources/";
 
 	/**
-	 * Test of convert method, of class RdfToNeo4j.
-	 */
-	@Test
-	public void testConvert() throws FileNotFoundException {
-		String inputFile = ROOT_RESOURCES + "testConvert/input1.rdf";
-		String outputDb = ROOT_RESOURCES + "testConvertResult.neo4jdb";
-		String expectedDb = ROOT_RESOURCES + "testConvertExpected.neo4jdb";
-
-		RdfToNeo4j converter = new RdfToNeo4j();
-		FileInputStream inputStream = new FileInputStream(new File(inputFile));
-		converter.convert(inputStream, RDFFormat.NQUADS, outputDb);
-		GraphDatabaseService result = new GraphDatabaseFactory().newEmbeddedDatabase(new File(outputDb));
-		GraphDatabaseService expected = new GraphDatabaseFactory().newEmbeddedDatabase(new File(expectedDb));
-		assert (areEquals(result, expected));
-		result.shutdown();
-		expected.shutdown();
-	}
-
-        /**
 	 * Test of convert method, of class RdfToNeo4jBatch.
 	 */
 	@Test
-	public void testConvertBatch() throws FileNotFoundException {
-		String inputFile = ROOT_RESOURCES + "testConvert/input1.rdf";
-		String outputDb = ROOT_RESOURCES + "testConvertBatchResult.neo4jdb";
+	public void testConvertGraphNeo4j() throws FileNotFoundException {
+		String inputFile = ROOT_RESOURCES + "testConvert/input1.nq";
+		String outputDb = ROOT_RESOURCES + "testConvertNeo4jResult.neo4jdb";
 		String expectedDb = ROOT_RESOURCES + "testConvertExpected.neo4jdb";
 
-		RdfToNeo4jBatch converter = new RdfToNeo4jBatch();
+		RdfToGraph converter = new RdfToGraph();
+		converter.setDriver("neo4j");
+		converter.setWipeOnOpen(true);
+
 		FileInputStream inputStream = new FileInputStream(new File(inputFile));
 		converter.convert(inputStream, RDFFormat.NQUADS, outputDb);
+
 		GraphDatabaseService result = new GraphDatabaseFactory().newEmbeddedDatabase(new File(outputDb));
 		GraphDatabaseService expected = new GraphDatabaseFactory().newEmbeddedDatabase(new File(expectedDb));
 		assert (areEquals(result, expected));
 		result.shutdown();
 		expected.shutdown();
 	}
-
-
-	
-	
 
 	private boolean areEquals(GraphDatabaseService result, GraphDatabaseService expected) {
 		result.beginTx();

@@ -12,9 +12,17 @@ import org.openrdf.model.Value;
  * Interface for a Graph Database driver.
  * @author edemairy
  */
-public interface GdbDriver {
-	void openDb(String dbPath);
-	void closeDb();
-	Object createNode(Value v);
-	public Object createRelationship(Object sourceId, Object objectId, String predicate, Map<String, Object> properties);
+public abstract class GdbDriver {
+	private boolean wipeOnOpen;
+
+	public abstract void openDb(String dbPath);
+	public void setWipeOnOpen(boolean newValue) {
+		wipeOnOpen = newValue;
+	}
+	public boolean getWipeOnOpen() {
+		return wipeOnOpen;
+	}
+	public abstract void closeDb();
+	public abstract Object createNode(Value v);
+	public abstract Object createRelationship(Object sourceId, Object objectId, String predicate, Map<String, Object> properties);
 }

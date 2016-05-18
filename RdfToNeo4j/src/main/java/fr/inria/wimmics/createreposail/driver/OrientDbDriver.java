@@ -27,7 +27,7 @@ import org.openrdf.model.Value;
  *
  * @author edemairy
  */
-public class OrientDbDriver implements GdbDriver {
+public class OrientDbDriver extends GdbDriver {
 
 	OrientGraphFactory graph;
 

@@ -14,8 +14,14 @@ import static fr.inria.wimmics.createreposail.RdfToGraph.LITERAL;
 import static fr.inria.wimmics.createreposail.RdfToGraph.TYPE;
 import static fr.inria.wimmics.createreposail.RdfToGraph.VALUE;
 import java.io.File;
+import java.nio.file.FileVisitOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -31,7 +37,7 @@ import org.openrdf.model.Value;
  *
  * @author edemairy
  */
-public class Neo4jDriver implements GdbDriver {
+public class Neo4jDriver extends GdbDriver {
 
 	BatchInserter inserter;
 	private static final Logger LOGGER = Logger.getLogger(Neo4jDriver.class.getName());
@@ -40,6 +46,13 @@ public class Neo4jDriver implements GdbDriver {
 	public void openDb(String dbPath) {
 		try {
 			File dbDir = new File(dbPath);
+			if (getWipeOnOpen()) {
+				Files.walk(Paths.get(dbPath), FileVisitOption.FOLLOW_LINKS)
+					.sorted(Comparator.reverseOrder())
+					.map(Path::toFile)
+					.peek(path -> LOGGER.log(Level.INFO, "removing: {0}", path))
+					.forEach(File::delete);
+			}
 			inserter = BatchInserters.inserter(dbDir);
 		} catch (Exception e) {
 			LOGGER.severe(e.toString());
